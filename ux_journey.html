@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Journey Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+
+            /* Colors */
+            --moment-know: #3b82f6;
+            --moment-go: #10b981;
+            --moment-do: #f59e0b;
+            --moment-buy: #ec4899;
+
+            --sludge-critical: #ef4444;
+            --sludge-friction: #f97316;
+            --sludge-justified: #6366f1;
+            --sludge-smooth: #22c55e;
+
+            --branch-color: #a855f7;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            padding: 15px 25px;
+            display: flex; gap: 15px; align-items: flex-end; z-index: 20;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .brand { width: auto; font-weight: 800; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px; align-self: center; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+        label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        input, select { background: #020617; border: 1px solid var(--card-border); color: white; padding: 8px; border-radius: 6px; outline: none; }
+        button { background: var(--moment-know); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; height: 35px; }
+        .btn-secondary { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-muted); }
+        .btn-secondary:hover { background: var(--card-border); color: white; }
+
+        /* --- SCROLLABLE AREA --- */
+        #scroll-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+            padding: 40px;
+        }
+
+        /* --- TIMELINE ROWS --- */
+        .timeline-label {
+            font-size: 0.75rem; font-weight: 800; color: var(--text-muted); 
+            margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .timeline-row {
+            display: flex;
+            gap: 50px;
+            padding-bottom: 40px;
+            position: relative;
+            min-width: min-content;
+        }
+
+        #main-timeline { border-bottom: 2px dashed #334155; margin-bottom: 40px; }
+        
+        #branch-container { display: none; animation: fadeIn 0.5s forwards; }
+        #branch-timeline { 
+            background: rgba(168, 85, 247, 0.05); 
+            border-radius: 16px; 
+            padding: 20px; 
+            border: 1px dashed var(--branch-color);
+        }
+
+        /* --- SVG CONNECTOR --- */
+        #svg-layer {
+            position: absolute; top: 0; left: 0; 
+            pointer-events: none; z-index: 1;
+        }
+        path.connector-line {
+            stroke: var(--branch-color); stroke-width: 3; fill: none; stroke-dasharray: 10; animation: dash 30s linear infinite;
+        }
+        @keyframes dash { to { stroke-dashoffset: -1000; } }
+
+        /* --- CARDS --- */
+        .node-wrapper {
+            min-width: 360px; max-width: 360px; position: relative; z-index: 2;
+            opacity: 0; animation: fadeInUp 0.5s forwards;
+        }
+        .node-wrapper.ghost { visibility: hidden; pointer-events: none; }
+
+        .node-wrapper:not(:last-child):not(.ghost)::after {
+            content: ''; position: absolute; top: 28px; right: -50px; width: 50px; height: 2px; background: var(--card-border); z-index: 0;
+        }
+
+        .card {
+            background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        /* Card Content */
+        .card-header { padding: 15px; display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--card-border); }
+        .phase-title { font-weight: 700; font-size: 1.1rem; color: white; }
+        .google-moment-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; color: white; display: inline-flex; align-items: center; gap: 6px; }
+        
+        .context-section { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Touchpoints */
+        .touchpoints { display: flex; flex-wrap: wrap; gap: 5px; }
+        .tp-tag { font-size: 0.7rem; background: #0f172a; border: 1px solid var(--card-border); padding: 3px 8px; border-radius: 10px; color: var(--text-muted); }
+        
+        .tiny-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #64748b; display: flex; align-items: center; gap: 5px; margin-top: 5px;}
+        .tiny-label { color: darkgoldenrod; }
+        /* Emotion */
+        .emotion-badge { align-self: flex-start; font-size: 0.75rem; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); display: inline-flex; align-items: center; gap: 5px; }
+
+        .jtbd-box { background: rgba(255,255,255,0.03); border-left: 3px solid var(--text-muted); padding: 10px; font-size: 0.85rem; font-style: italic; color: #cbd5e1; line-height: 1.4; }
+        
+        .hesitation-box { padding: 10px; background: rgba(249, 115, 22, 0.08); border-left: 3px solid #f97316; border-radius: 0 4px 4px 0; }
+        .hesitation-text { font-size: 0.8rem; color: #fed7aa; font-style: italic; }
+
+        .audit-section { background: #111827; padding: 15px; border-top: 1px solid var(--card-border); }
+        .quad-pill { display: block; text-align: center; font-size: 0.7rem; font-weight: 700; padding: 6px; border-radius: 4px; margin-bottom: 10px; text-transform: uppercase; }
+        .scores-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .score-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 8px; border-radius: 6px; text-align: center; }
+        .score-num { font-size: 1.1rem; font-weight: 800; display: block; }
+        .score-lbl { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; }
+        
+        .opp-section { padding: 15px; background: rgba(255,255,255,0.02); border-top: 1px solid var(--card-border); }
+        .opp-text { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+        .matrix-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 3px; font-weight: 700; text-transform: uppercase; border: 1px solid currentColor; float: right; }
+
+        /* Simulator Input (Collapsible) */
+        .branch-toggle-bar { padding: 10px; background: #160c2e; border-top: 1px solid #4c1d95; text-align: center; font-size: 0.75rem; color: #a78bfa; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .branch-toggle-bar:hover { background: #2e1065; color: white; }
+        
+        .branch-drawer { display: none; padding: 15px; background: #1e1b4b; border-top: 1px solid #4c1d95; }
+        .branch-input { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #4c1d95; color: white; padding: 8px; font-size: 0.8rem; border-radius: 4px; margin-bottom: 8px; }
+        .branch-btn { width: 100%; background: transparent; border: 1px solid #8b5cf6; color: #a78bfa; font-size: 0.75rem; padding: 6px; border-radius: 4px; cursor: pointer; }
+        .branch-btn:hover { background: #8b5cf6; color: white; }
+
+        /* Legend */
+        #legend-bar { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: #0f172a; border-top: 1px solid var(--card-border); 
+            padding: 10px 20px; display: flex; flex-direction: column; 
+            align-items: center; gap: 10px; z-index: 100; 
+        }
+        .legend-content { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+        .legend-credits { 
+            font-size: 0.65rem; color: var(--text-muted); opacity: 0.6; 
+            text-transform: uppercase; letter-spacing: 1px; border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 8px; width: 100%; text-align: center;
+        }
+        .legend-group { display: flex; gap: 15px; align-items: center; border-right: 1px solid var(--card-border); padding-right: 30px; }
+        .legend-group:last-child { border-right: none; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* Image Gen Styles */
+        .card-img-placeholder {
+            width: 100%; height: 200px; background: #0f172a;
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid var(--card-border);
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .card-img-placeholder img { width: 100%; height: 100%; object-fit: cover; animation: fadeIn 0.5s; }
+        .gen-img-btn {
+            background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px dashed #334155;
+            padding: 8px 15px; border-radius: 6px; font-size: 0.75rem; transition: 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .gen-img-btn:hover { background: rgba(255,255,255,0.1); color: white; border-color: var(--moment-know); }
+        .loader-sm { width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+
+        /* Settings Drawer */
+        .settings-drawer {
+            position: fixed; top: 0; right: -350px; width: 320px; height: 100%;
+            background: #0f172a; border-left: 1px solid var(--card-border);
+            padding: 20px; z-index: 1000; transition: 0.3s ease;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+        .settings-drawer .input-group { flex: 0 0 auto; width: 100%; min-width: 0; }
+        .settings-drawer.open { right: 0; }
+        .settings-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 900;
+            display: none; opacity: 0; transition: 0.3s;
+        }
+        .settings-overlay.open { display: block; opacity: 1; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+        .drawer-header h3 { margin: 0; color: white; font-size: 1rem; }
+        .close-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .close-btn:hover { color: white; }
+        
+        /* Re-render Overlay */
+        .img-controls {
+            position: absolute; bottom: 10px; right: 10px;
+            display: flex; gap: 8px; opacity: 0; transition: 0.2s;
+        }
+        .card-img-placeholder:hover .img-controls { opacity: 1; }
+        
+        .img-btn {
+            width: 24px; height: 24px; border-radius: 50%;
+            padding:10px;
+            background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; font-size: 0.7rem;
+            backdrop-filter: blur(4px);
+        }
+        .img-btn:hover { background: #3b82f6; border-color: #3b82f6; transform: scale(1.1); }
+
+        #loader { display: none; position: absolute; inset: 0; background: rgba(15,23,42,0.9); z-index: 50; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #334155; border-top-color: var(--moment-know); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand"><i class="fa-solid fa-code-compare"></i>User Journey Generator</div>
+    <div class="input-group" style="flex:2"><label>Persona</label><input type="text" id="persona" placeholder="e.g. Skeptical Buyer" /></div>
+    <div class="input-group" style="flex:2"><label>Objective</label><input type="text" id="objective" placeholder="e.g. Buy Life Insurance" /></div>
+    <button onclick="generateMap()">Analyze</button>
+    <button onclick="toggleSettings()" class="btn-secondary" title="Settings" style="width:auto; padding: 0 15px;"><i class="fa-solid fa-gear"></i></button>
+</header>
+
+<div id="settings-overlay" onclick="toggleSettings()"></div>
+<div id="settings-drawer" class="settings-drawer">
+    <div class="drawer-header"><h3>Configuration</h3><button class="close-btn" onclick="toggleSettings()">&times;</button></div>
+    
+    <div class="input-group">
+        <label>AI Provider</label>
+        <select id="provider" onchange="updateModelOptions()">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+            <option value="deepseek">DeepSeek</option>
+        </select>
+    </div>
+    <div class="input-group">
+        <label>Model</label>
+        <select id="model-select"></select>
+    </div>
+    <div class="input-group"><label>Text API Key</label><input type="password" id="apiKey" placeholder="sk-..." /></div>
+    
+    <hr style="border:0; border-top:1px solid var(--card-border); width:100%; margin:10px 0;">
+    
+    <div class="input-group">
+        <label>Image Gen (Gemini)</label>
+        <div style="display:flex; gap:5px;">
+            <input type="password" id="imageKey" placeholder="API Key..." style="flex:1" onchange="saveImageKey()">
+            <button onclick="loadImageModels()" class="btn-secondary" style="width:auto; padding: 8px;"><i class="fa-solid fa-sync"></i></button>
+        </div>
+        <select id="imageModelSelect" style="margin-top:5px;">
+            <option value="imagen-3.0-generate-001">Imagen 3.0 (Default)</option>
+        </select>
+    </div>
+    
+    <div style="flex:1"></div>
+    <button onclick="exportCSV()" class="btn-secondary" style="width:100%">Export CSV</button>
+</div>
+
+<div id="scroll-container">
+    <svg id="svg-layer"></svg> 
+
+    <!-- ORIGINAL PATH -->
+    <div class="timeline-label"><i class="fa-solid fa-route"></i> Standard Path</div>
+    <div id="main-timeline" class="timeline-row"></div>
+
+    <!-- BRANCHED PATH -->
+    <div id="branch-container">
+        <div class="timeline-label" style="color: var(--branch-color)">
+            <i class="fa-solid fa-code-branch"></i> 
+            Simulated Scenario: <span id="branch-title" style="color:white; margin-left:5px;"></span>
+        </div>
+        <div id="branch-timeline" class="timeline-row"></div>
+    </div>
+</div>
+
+<div id="legend-bar">
+    <div class="legend-content">
+        <div class="legend-group">
+            <strong style="color:#fff">MOMENTS:</strong>
+            <div class="legend-item"><span class="dot" style="background:var(--moment-know)"></span> Know</div>
+            <div class="legend-item"><span class="dot" style="background:var(--moment-go)"></span> Go</div>
+            <div class="legend-item"><span class="dot" style="background:var(--moment-do)"></span> Do</div>
+            <div class="legend-item"><span class="dot" style="background:var(--moment-buy)"></span> Buy</div>
+        </div>
+        <div class="legend-group">
+            <strong style="color:#fff">SCORES (1-10):</strong>
+            <div class="legend-item"><strong>CX</strong> (1=Poor, 10=Great)</div>
+            <div class="legend-item"><strong>Time</strong> (1=Slow, 10=Fast)</div>
+        </div>
+        <div class="legend-group">
+            <strong style="color:#fff">SLUDGE:</strong>
+            <div class="legend-item"><i class="fa-solid fa-triangle-exclamation" style="color:var(--sludge-critical)"></i> Critical</div>
+        </div>
+    </div>
+    <div class="legend-credits">
+        v1.1.0-beta • User Journey Generator • <i class="fa-brands fa-creative-commons"></i> BY-NC-SA 4.0 • Credit to <a href="https://refruit.com" target="_blank" style="color: inherit; text-decoration: underline;"><strong>Refruit</strong></a>
+    </div>
+</div>
+
+<div id="loader"><div class="spinner"></div><div id="loader-text" style="color:var(--text-muted); margin-top:10px;">Processing...</div></div>
+
+<script>
+    let currentJourneyData = [];
+    let currentBranchData = [];
+    let branchStartIndex = -1;
+
+    const models = {
+        openai: [
+            { id: 'gpt-4o', name: 'GPT-4o' },
+            { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+            { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
+        ],
+        deepseek: [
+            { id: 'deepseek-chat', name: 'DeepSeek V3' },
+            { id: 'deepseek-coder', name: 'DeepSeek Coder' }
+        ],
+        anthropic: [
+            { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet' },
+            { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+            { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' }
+        ],
+        google: [
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' }
+        ]
+    };
+
+    window.onload = () => {
+        const savedProvider = localStorage.getItem('journey_prov') || 'openai';
+        document.getElementById('provider').value = savedProvider;
+        updateModelOptions();
+        
+        if(localStorage.getItem('journey_model')) {
+            document.getElementById('model-select').value = localStorage.getItem('journey_model');
+        }
+        
+        if(localStorage.getItem('journey_persona')) document.getElementById('persona').value = localStorage.getItem('journey_persona');
+        if(localStorage.getItem('journey_obj')) document.getElementById('objective').value = localStorage.getItem('journey_obj');
+        
+        // Load Image Key
+        if(localStorage.getItem('journey_img_key')) {
+            document.getElementById('imageKey').value = localStorage.getItem('journey_img_key');
+            loadImageModels(); // Auto-load
+        }
+    };
+
+    function toggleSettings() {
+        const drawer = document.getElementById('settings-drawer');
+        const overlay = document.getElementById('settings-overlay');
+        
+        if (drawer.classList.contains('open')) {
+            drawer.classList.remove('open');
+            overlay.classList.remove('open');
+        } else {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+        }
+    }
+
+    function saveImageKey() {
+        const key = document.getElementById('imageKey').value;
+        localStorage.setItem('journey_img_key', key);
+    }
+
+    function updateModelOptions() {
+        const provider = document.getElementById('provider').value;
+        
+        // Load saved key for this provider
+        const savedKey = localStorage.getItem(`journey_key_${provider}`);
+        document.getElementById('apiKey').value = savedKey || '';
+
+        const modelSelect = document.getElementById('model-select');
+        modelSelect.innerHTML = '';
+        
+        if(models[provider]) {
+            models[provider].forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.innerText = m.name;
+                modelSelect.appendChild(opt);
+            });
+        }
+    }
+
+    async function loadImageModels() {
+        const apiKey = document.getElementById('imageKey').value;
+        if(!apiKey) return alert("Please enter Image API Key first.");
+        
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const json = await res.json();
+            if(json.error) throw new Error(json.error.message);
+
+            const select = document.getElementById('imageModelSelect');
+            select.innerHTML = '';
+            
+            // Filter for likely image models
+            const imageModels = (json.models || []).filter(m => m.name.includes('imagen') || m.name.includes('image'));
+            
+            if(imageModels.length === 0) {
+                // Fallback if no obvious image models found, just list all that support predict?
+                // Or just alert
+                // alert("No explicit 'imagen' models found. Listing all models."); // Remove alert to be less annoying on auto-load
+                (json.models || []).forEach(m => {
+                     const opt = document.createElement('option');
+                     opt.value = m.name.split('/').pop();
+                     opt.innerText = m.displayName || m.name;
+                     select.appendChild(opt);
+                });
+            } else {
+                imageModels.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.name.split('/').pop(); // remove "models/" prefix
+                    opt.innerText = m.displayName || m.name;
+                    select.appendChild(opt);
+                });
+                
+                // Auto-select Nano Banana if available
+                const bestMatch = imageModels.find(m => (m.displayName || m.name).includes('Nano Banana'));
+                if(bestMatch) select.value = bestMatch.name.split('/').pop();
+            }
+            // alert(`Found ${select.options.length} models.`); // Remove alert
+        } catch(e) {
+            console.error("Failed to load models: " + e.message); // Log instead of alert
+        }
+    }
+
+    function downloadCardImage(event, uniqueId) {
+        event.stopPropagation();
+        const imgBox = document.getElementById(`img-box-${uniqueId}`);
+        const img = imgBox.querySelector('img');
+        if (img) {
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `journey_visual_${uniqueId}.png`;
+            link.click();
+        }
+    }
+
+    async function generateCardImage(uniqueId, index, isBranch) {
+        const imageKey = document.getElementById('imageKey').value;
+        if(!imageKey) return alert("Please enter your Nano Banana (Gemini) Image Key.");
+
+        const dataSrc = isBranch ? currentBranchData : currentJourneyData;
+        const step = dataSrc[index];
+        
+        const btn = document.getElementById(`btn-${uniqueId}`);
+        const loader = document.getElementById(`loader-${uniqueId}`);
+        const imgBox = document.getElementById(`img-box-${uniqueId}`);
+
+        // UI Loading State
+        if (btn && loader) {
+            btn.style.opacity = '0.7';
+            loader.style.display = 'inline-block';
+        } else {
+            // Re-rendering state
+            imgBox.style.opacity = '0.5';
+            imgBox.style.pointerEvents = 'none';
+            // Optionally inject a loader, but opacity implies work
+        }
+        
+        const persona = document.getElementById('persona').value || 'User';
+        const objective = document.getElementById('objective').value || 'achieve a goal';
+        
+        const prompt = `Cinematic, photorealistic 4k photography. 16:9 aspect ratio.
+        Overall Goal: The character is on a journey to ${objective}. (Ensure this context influences the scene).
+        Character: A ${persona}. 
+        Outfit: The character is wearing a neutral grey shirt/blouse and dark pants. (IMPORTANT: Maintain this exact outfit across all images).
+        Action: ${step.microMoment}. 
+        Context: The character is using ${Array.isArray(step.touchpoints) ? step.touchpoints.join(', ') : step.touchpoints}.
+        Motivation (JTBD): ${step.jtbd || 'To achieve their goal'}.
+        Emotion: ${step.emotion}. The character looks ${step.emotion}.
+        Scene: A candid shot of the ${persona} working towards the goal of "${objective}". They are currently "${step.microMoment}" using "${Array.isArray(step.touchpoints) ? step.touchpoints.join(', ') : step.touchpoints}".
+        Style: authentic moment, spontaneous snapshot, natural imperfections, raw photo, documentary style, candid moment. No text, no illustrations, no infographics.`;
+
+        try {
+            const b64Image = await callGeminiImageAPI(imageKey, prompt);
+            imgBox.innerHTML = `
+                <img src="${b64Image}" alt="Generated Scene" />
+                <div class="img-controls">
+                    <button class="img-btn" title="Download" onclick="downloadCardImage(event, '${uniqueId}')"><i class="fa-solid fa-download"></i></button>
+                    <button class="img-btn" title="Re-render" onclick="generateCardImage('${uniqueId}', ${index}, ${isBranch}); event.stopPropagation();"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+            `;
+            
+            if(btn && loader) {
+                btn.style.opacity = '1';
+                loader.style.display = 'none';
+            }
+            imgBox.style.opacity = '1';
+            imgBox.style.pointerEvents = 'auto';
+            // Ensure onclick is disabled on the box so we don't trigger by clicking the image randomly if not desired
+            // User said "small button... blocking the image". This implies explicit action.
+            // But previously I enabled clicking anywhere.
+            // To support "button only" for re-render, I should disable the parent onclick.
+            imgBox.onclick = null; 
+
+        } catch(e) {
+            alert("Image Gen Error: " + e.message);
+            if (btn && loader) {
+                btn.style.opacity = '1';
+                loader.style.display = 'none';
+            } else {
+                imgBox.style.opacity = '1';
+                imgBox.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    async function callGeminiImageAPI(apiKey, prompt) {
+        const model = document.getElementById('imageModelSelect').value;
+        
+        // 1. Imagen Models (Legacy/Specific Image Models) -> :predict
+        if (model.includes('imagen')) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instances: [{ prompt: prompt }],
+                    parameters: { sampleCount: 1, aspectRatio: "16:9" }
+                })
+            });
+            const json = await response.json();
+            if(json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+            if(!json.predictions || !json.predictions[0] || !json.predictions[0].bytesBase64Encoded) {
+                throw new Error("No image data returned from Imagen.");
+            }
+            return `data:image/png;base64,${json.predictions[0].bytesBase64Encoded}`;
+        } 
+        // 2. Gemini Models (Native Image Gen) -> :generateContent
+        else {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseModalities: ["IMAGE"],
+                        speechConfig: undefined // ensure strictly image
+                    }
+                })
+            });
+            const json = await response.json();
+            if(json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+
+            // Parse Gemini Response
+            const candidates = json.candidates;
+            if (!candidates || !candidates[0] || !candidates[0].content || !candidates[0].content.parts) {
+                throw new Error("No content returned from Gemini.");
+            }
+            
+            // Find image part
+            const imagePart = candidates[0].content.parts.find(p => p.inlineData);
+            if (!imagePart) throw new Error("No image generated. The model might have refused or output text only.");
+
+            return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+        }
+    }
+
+    function ensureArray(data) {
+        if (Array.isArray(data)) return data;
+        if (data.steps && Array.isArray(data.steps)) return data.steps;
+        if (data.journey && Array.isArray(data.journey)) return data.journey;
+        if (typeof data === 'object' && data !== null) return [data];
+        return [];
+    }
+
+    function toggleBranch(index) {
+        const drawer = document.getElementById(`branch-drawer-${index}`);
+        const icon = document.getElementById(`branch-icon-${index}`);
+        if (drawer.style.display === 'block') {
+            drawer.style.display = 'none'; icon.style.transform = 'rotate(0deg)';
+        } else {
+            drawer.style.display = 'block'; icon.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    // --- MAIN GENERATION ---
+    async function generateMap() {
+        const apiKey = document.getElementById('apiKey').value;
+        const provider = document.getElementById('provider').value;
+        const model = document.getElementById('model-select').value;
+        const persona = document.getElementById('persona').value;
+        const objective = document.getElementById('objective').value;
+
+        if(!apiKey || !persona || !objective) return alert("Please fill all fields");
+        localStorage.setItem(`journey_key_${provider}`, apiKey);
+        localStorage.setItem('journey_prov', provider);
+        localStorage.setItem('journey_model', model);
+        localStorage.setItem('journey_persona', persona);
+        localStorage.setItem('journey_obj', objective);
+
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('loader-text').innerText = "Mapping Standard Journey...";
+        
+        // Reset
+        document.getElementById('main-timeline').innerHTML = '';
+        document.getElementById('branch-container').style.display = 'none';
+        document.getElementById('branch-timeline').innerHTML = '';
+        document.getElementById('svg-layer').innerHTML = '';
+
+        const systemPrompt = `
+        You are a UX Researcher (Google Micro-Moments). Map journey for Persona: "${persona}", Objective: "${objective}".
+        
+        Break into 6-8 steps. For each step, provide strictly:
+        1. phase: (string) Name of phase
+        2. microMoment: (I-want-to-[know/go/do/buy])
+        3. emotion: (string) 1-2 adjectives
+        4. touchpoints: (array of strings)
+        5. jtbd: (string) Format: "When [situation], I want to [motivation], so I can [outcome]".
+        6. hesitation: (string)
+        7. cxScore: (1-10)
+        8. timeScore: (1-10)
+        9. sludgeDesc: (string)
+        10. opportunity: (string)
+
+        Return JSON Array of objects.
+        `;
+
+        try {
+            const rawData = await callAI(provider, model, apiKey, systemPrompt, "Generate map.");
+            currentJourneyData = ensureArray(rawData);
+            renderTimeline(currentJourneyData, document.getElementById('main-timeline'), false);
+        } catch(e) { alert(e.message); } 
+        finally { document.getElementById('loader').style.display = 'none'; }
+    }
+
+    // --- SIMULATION LOGIC ---
+    async function simulateBranch(index) {
+        const scenario = document.getElementById(`branch-input-${index}`).value;
+        if(!scenario) return alert("Enter a scenario.");
+
+        const apiKey = document.getElementById('apiKey').value;
+        const provider = document.getElementById('provider').value;
+        const model = document.getElementById('model-select').value;
+        const originStep = currentJourneyData[index];
+        const objective = document.getElementById('objective').value;
+
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('loader-text').innerText = "Simulating Adaptive Path...";
+
+        toggleBranch(index);
+
+        // --- STRICT PROMPT FIX ---
+        const systemPrompt = `
+        Journey Generator. 
+        User Context: Step "${originStep.phase}" (${originStep.microMoment}).
+        Event: "${scenario}".
+        Original Objective: "${objective}".
+        
+        Constraint: The user MUST still try to achieve the Original Objective.
+        
+        Generate the NEXT 3-4 steps. 
+        YOU MUST RETURN JSON WITH THESE EXACT KEYS (No markdown, just JSON):
+        [
+          {
+            "phase": "...",
+            "microMoment": "I-want-to-know/go/do/buy",
+            "emotion": "...",
+            "touchpoints": ["..."],
+            "jtbd": "When [x], I want to [y], so I can [z]",
+            "hesitation": "...",
+            "cxScore": 5,
+            "timeScore": 5,
+            "sludgeDesc": "...",
+            "opportunity": "..."
+          }
+        ]
+        `;
+
+        try {
+            const rawData = await callAI(provider, model, apiKey, systemPrompt, "Simulate adaptive path.");
+            currentBranchData = ensureArray(rawData);
+            
+            const branchContainer = document.getElementById('branch-container');
+            const branchTimeline = document.getElementById('branch-timeline');
+            document.getElementById('branch-title').innerText = scenario;
+            branchTimeline.innerHTML = '';
+            branchContainer.style.display = 'block';
+
+            // 1. Add Ghost Cards for alignment
+            for(let i=0; i<=index; i++) {
+                const ghost = document.createElement('div');
+                ghost.className = 'node-wrapper ghost';
+                ghost.innerHTML = `<div class="card" style="height: 100px; opacity:0;"></div>`;
+                branchTimeline.appendChild(ghost);
+            }
+
+            // 2. Render New Branch
+            renderTimeline(currentBranchData, branchTimeline, true);
+
+            // 3. Connector
+            setTimeout(() => drawConnector(index), 500);
+
+            // 4. Scroll
+            setTimeout(() => {
+                branchContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+
+        } catch(e) { alert(e.message); }
+        finally { document.getElementById('loader').style.display = 'none'; }
+    }
+
+    // --- RENDERER ---
+    function renderTimeline(data, container, isBranch) {
+        data.forEach((step, i) => {
+            const m = (step.microMoment || "know").toLowerCase();
+            let mColor = "#3b82f6", mIcon = "fa-magnifying-glass";
+            if(m.includes('go')) { mColor = "#10b981"; mIcon = "fa-location-dot"; }
+            else if(m.includes('do')) { mColor = "#f59e0b"; mIcon = "fa-clipboard-list"; }
+            else if(m.includes('buy')) { mColor = "#ec4899"; mIcon = "fa-credit-card"; }
+
+            let slColor = "#22c55e", slLabel = "Smooth", auditIcon = "fa-check-circle";
+            if((step.cxScore||5)<5 && (step.timeScore||5)<5) { slColor = "#ef4444"; slLabel = "Critical"; auditIcon = "fa-triangle-exclamation"; }
+            else if((step.cxScore||5)<5) { slColor = "#f97316"; slLabel = "Friction"; auditIcon = "fa-stopwatch"; }
+
+            const div = document.createElement('div');
+            const uniqueId = isBranch ? `branch-node-${i}` : `main-node-${i}`;
+            div.id = uniqueId;
+            div.className = 'node-wrapper';
+            div.style.animationDelay = `${i * 0.1}s`;
+
+            const simHTML = isBranch ? '' : `
+                <div class="branch-toggle-bar" onclick="toggleBranch(${i})">
+                    <i class="fa-solid fa-chevron-down" id="branch-icon-${i}"></i> Simulate Scenario
+                </div>
+                <div class="branch-drawer" id="branch-drawer-${i}">
+                    <div class="tiny-label" style="color:#a78bfa; margin-bottom:5px;">What if...</div>
+                    <input type="text" id="branch-input-${i}" class="branch-input" placeholder="e.g. App crashes...">
+                    <button class="branch-btn" onclick="simulateBranch(${i})">Run Simulation</button>
+                </div>
+            `;
+
+            // Handling potentially missing touchpoints
+            const tpArray = Array.isArray(step.touchpoints) ? step.touchpoints : (step.touchpoints ? [step.touchpoints] : []);
+
+            div.innerHTML = `
+                <div class="card" style="border-top: 4px solid ${slColor}">
+                    <div class="card-img-placeholder" id="img-box-${uniqueId}" onclick="generateCardImage('${uniqueId}', ${i}, ${isBranch})">
+                        <div class="gen-img-btn" id="btn-${uniqueId}">
+                            <div class="loader-sm" id="loader-${uniqueId}"></div>
+                            <i class="fa-solid fa-image"></i> Generate Visual
+                        </div>
+                    </div>
+                    <div class="card-header">
+                        <div><span class="phase-title">${step.phase||'Step'}</span></div>
+                        <div class="google-moment-badge" style="background:${mColor}"><i class="fa-solid ${mIcon}"></i> ${m.replace('i-want-to-','').toUpperCase()}</div>
+                    </div>
+
+                    <div class="context-section">
+                        <div class="tiny-label">TOUCHPOINTS</div>
+                        <div class="touchpoints">${tpArray.map(t => `<span class="tp-tag">${t}</span>`).join('')}</div>
+                        
+                        <div class="tiny-label">EMOTION</div>
+                        <div class="emotion-badge"><i class="fa-solid fa-face-meh"></i> ${step.emotion||'Neutral'}</div>
+
+                        <div class="tiny-label" style="margin-top:10px;">JOBS TO BE DONE</div>
+                        <div class="jtbd-box">${step.jtbd||'Undefined'}</div>
+
+                        <div class="tiny-label">HESITATION</div>
+                        <div class="hesitation-box"><div class="hesitation-text">"${step.hesitation||''}"</div></div>
+                    </div>
+
+                    <div class="audit-section">
+                        <div class="quad-pill" style="color:${slColor}; border:1px solid ${slColor}"><i class="fa-solid ${auditIcon}"></i> ${slLabel}</div>
+                        <div class="scores-grid" style="margin-top:10px;">
+                            <div class="score-card"><span class="score-num">${step.cxScore||'-'}</span><span class="score-lbl">CX</span></div>
+                            <div class="score-card"><span class="score-num">${step.timeScore||'-'}</span><span class="score-lbl">Time</span></div>
+                        </div>
+                    </div>
+
+                    <div class="opp-section">
+                        <div class="tiny-label">OPPORTUNITY</div>
+                        <div class="opp-text">${step.opportunity||''}</div>
+                    </div>
+                    ${simHTML}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function drawConnector(mainIndex) {
+        const svg = document.getElementById('svg-layer');
+        svg.innerHTML = ''; 
+
+        const startNode = document.getElementById(`main-node-${mainIndex}`);
+        const branchTimeline = document.getElementById('branch-timeline');
+        const endNodeCard = branchTimeline.children[mainIndex + 1];
+
+        if(startNode && endNodeCard) {
+            const rect1 = startNode.getBoundingClientRect();
+            const rect2 = endNodeCard.getBoundingClientRect();
+            const containerRect = document.getElementById('scroll-container').getBoundingClientRect();
+
+            const x1 = rect1.left + (rect1.width / 2) - containerRect.left + document.getElementById('scroll-container').scrollLeft;
+            const y1 = rect1.bottom - containerRect.top + document.getElementById('scroll-container').scrollTop;
+            const x2 = rect2.left + (rect2.width / 2) - containerRect.left + document.getElementById('scroll-container').scrollLeft;
+            const y2 = rect2.top - containerRect.top + document.getElementById('scroll-container').scrollTop;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const controlY = (y1 + y2) / 2;
+            const d = `M ${x1} ${y1} C ${x1} ${controlY}, ${x2} ${controlY}, ${x2} ${y2}`;
+            
+            path.setAttribute("d", d);
+            path.setAttribute("class", "connector-line");
+            svg.appendChild(path);
+            svg.setAttribute("width", document.getElementById('scroll-container').scrollWidth);
+            svg.setAttribute("height", document.getElementById('scroll-container').scrollHeight);
+        }
+    }
+
+    function exportCSV() {
+        if (!currentJourneyData || currentJourneyData.length === 0) return alert("No journey to export. Generate one first.");
+
+        const rows = [
+            ['Attribute', ...currentJourneyData.map((_, i) => `Step ${i + 1}`)],
+            ['Phase', ...currentJourneyData.map(s => `"${(s.phase || '').replace(/"/g, '""')}"`)],
+            ['MicroMoment', ...currentJourneyData.map(s => s.microMoment || '')],
+            ['Emotion', ...currentJourneyData.map(s => `"${(s.emotion || '').replace(/"/g, '""')}"`)],
+            ['Touchpoints', ...currentJourneyData.map(s => `"${(Array.isArray(s.touchpoints) ? s.touchpoints.join('; ') : s.touchpoints || '').replace(/"/g, '""')}"`)],
+            ['JTBD', ...currentJourneyData.map(s => `"${(s.jtbd || '').replace(/"/g, '""')}"`)], // Escape quotes
+            ['Hesitation', ...currentJourneyData.map(s => `"${(s.hesitation || '').replace(/"/g, '""')}"`)],
+            ['CX Score', ...currentJourneyData.map(s => s.cxScore || '')],
+            ['Time Score', ...currentJourneyData.map(s => s.timeScore || '')],
+            ['Sludge', ...currentJourneyData.map(s => `"${(s.sludgeDesc || '').replace(/"/g, '""')}"`)],
+            ['Opportunity', ...currentJourneyData.map(s => `"${(s.opportunity || '').replace(/"/g, '""')}"`)]
+        ];
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `journey_export_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function callAI(provider, model, apiKey, systemPrompt, userMsg) {
+        let url, headers, body;
+
+        if (provider === 'openai') {
+            url = 'https://api.openai.com/v1/chat/completions';
+            headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+            body = JSON.stringify({
+                model: model,
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }],
+                temperature: 0.7
+            });
+        } else if (provider === 'deepseek') {
+            url = 'https://api.deepseek.com/chat/completions';
+            headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+            body = JSON.stringify({
+                model: model,
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }],
+                temperature: 0.7
+            });
+        } else if (provider === 'anthropic') {
+            url = 'https://api.anthropic.com/v1/messages';
+            headers = {
+                'content-type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerously-allow-browser': 'true' 
+            };
+            body = JSON.stringify({
+                model: model,
+                max_tokens: 4096,
+                system: systemPrompt,
+                messages: [{ role: "user", content: userMsg }],
+                temperature: 0.7
+            });
+        } else if (provider === 'google') {
+            url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            headers = { 'Content-Type': 'application/json' };
+            body = JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [{ text: systemPrompt + "\n\n" + userMsg }]
+                }],
+                generationConfig: { temperature: 0.7 }
+            });
+        }
+
+        const res = await fetch(url, { method: 'POST', headers: headers, body: body });
+        const json = await res.json();
+
+        if (json.error) {
+            const errMsg = json.error.message || JSON.stringify(json.error);
+            throw new Error(errMsg);
+        }
+
+        let content = '';
+        if (provider === 'openai' || provider === 'deepseek') {
+            content = json.choices[0].message.content;
+        } else if (provider === 'anthropic') {
+            content = json.content[0].text;
+        } else if (provider === 'google') {
+            content = json.candidates[0].content.parts[0].text;
+        }
+
+        return JSON.parse(content.replace(/```json/g, '').replace(/```/g, '').trim());
+    }
+</script>
+
+</body>
+</html>

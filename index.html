@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Journey Generator - Introduction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --secondary: #6366f1;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .lead {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 30px 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        h2:first-of-type { margin-top: 0; }
+
+        p {
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .framework-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .framework-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--card-border);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .framework-card h3 {
+            font-size: 1rem;
+            margin: 0 0 8px 0;
+            color: #fff;
+        }
+
+        .framework-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .list-section {
+            margin: 15px 0;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+            align-items: flex-start;
+            font-size: 0.9rem;
+        }
+
+        .list-item i {
+            color: var(--accent);
+            margin-top: 3px;
+            font-size: 0.85rem;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--text-muted);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 30px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .version {
+            opacity: 0.6;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .highlight-box {
+            border-left: 3px solid var(--secondary);
+            background: rgba(99, 102, 241, 0.05);
+            padding: 15px 25px;
+            margin: 20px 0;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+
+        /* Carousel Styles */
+        .preview-section {
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: #020617;
+        }
+
+        .carousel {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel-item {
+            min-width: 100%;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .carousel-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 1;
+        }
+
+        .carousel-content {
+            position: relative;
+            z-index: 2;
+            max-width: 80%;
+        }
+
+        .carousel-content h3 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .carousel-content p {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .carousel-nav {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 3;
+        }
+
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--card-border);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-dot.active {
+            background: var(--accent);
+            transform: scale(1.2);
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 15px;
+            cursor: pointer;
+            z-index: 3;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-prev { left: 10px; }
+        .btn-next { right: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="hero">
+            <h1>User Journey Generator</h1>
+            <p class="lead">An AI-driven system for early assumption testing, rapid synthesis, and controlled exploration of alternative user journeys.</p>
+        </div>
+
+        <div class="content-card">
+            <h2>Experience Preview</h2>
+            <div class="preview-section">
+                <div class="carousel" id="carousel">
+                    <div class="carousel-item" style="background-image: url('img/one.png')">
+                        <div class="carousel-content">
+                            <h3>Journey Mapping</h3>
+                            <p>Beautifully visualized steps with integrated Micro-Moments and JTBD data.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item" style="background-image: url('img/two.png')">
+                        <div class="carousel-content">
+                            <h3>Branching Scenarios</h3>
+                            <p>Explore alternative paths and "What If" disruptions with ease.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item" style="background-image: url('img/three.png')">
+                        <div class="carousel-content">
+                            <h3>AI Visuals</h3>
+                            <p>Photorealistic scene generation powered by Imagen 3.0.</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-btn btn-prev" onclick="moveCarousel(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="carousel-btn btn-next" onclick="moveCarousel(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                <div class="carousel-nav" id="carousel-nav"></div>
+            </div>
+
+            <div class="cta-group" style="margin-top: 0; margin-bottom: 30px;">
+                <a href="UX journey.html" class="btn btn-primary">
+                    Launch Generator <i class="fa-solid fa-play"></i>
+                </a>
+                <a href="https://github.com/your-repo-link" class="btn btn-secondary" target="_blank">
+                    Explore Repository <i class="fa-solid fa-code"></i>
+                </a>
+            </div>
+
+            <p>The User Journey Generator is a decision-support environment for UX, product, and service teams to model, branch, and evaluate multiple plausible user journeys under uncertainty — before commitment, build, or rollout.</p>
+            
+            <p>Rather than producing a single “happy path,” the system enables teams to generate, compare, and stress-test alternative journeys, making trade-offs, risks, and missed opportunities visible early.</p>
+
+            <h2>Purpose</h2>
+            <p>The generator is designed to support three critical activities:</p>
+            <div class="list-section">
+                <div class="list-item"><i class="fa-solid fa-bolt"></i> <span><strong>Faster synthesis</strong> across research signals, hypotheses, and design intent</span></div>
+                <div class="list-item"><i class="fa-solid fa-compass"></i> <span><strong>Systematic option exploration</strong>, instead of premature convergence</span></div>
+                <div class="list-item"><i class="fa-solid fa-eye"></i> <span><strong>Early exposure of assumptions</strong>, before they solidify into decisions</span></div>
+            </div>
+            <p>By exploring multiple paths in parallel, teams can reason about why different outcomes emerge — not just what happens.</p>
+
+            <h2>Frameworks in use</h2>
+            <div class="framework-grid">
+                <div class="framework-card">
+                    <h3>Google Micro-Moments</h3>
+                    <p>Models intent-driven decision thresholds (Know, Go, Do, Buy) as branching points rather than fixed stages.</p>
+                </div>
+                <div class="framework-card">
+                    <h3>Jobs To Be Done (JTBD)</h3>
+                    <p>Grounds each journey step in functional, emotional, and situational jobs, clarifying motivations behind divergence.</p>
+                </div>
+                <div class="framework-card">
+                    <h3>Sludge & Friction Audit</h3>
+                    <p>Detects hesitation, cognitive load, ambiguity, and trust gaps that cause users to stall, detour, or abandon.</p>
+                </div>
+            </div>
+
+            <h2>What the system produces</h2>
+            <p>For each persona–objective pair, the simulator produces a baseline journey plus multiple alternative paths, with explicit representation of touchpoints, emotional states, and hesitation factors.</p>
+            
+            <div class="list-section">
+                <div class="list-item"><i class="fa-solid fa-chart-line"></i> <span><strong>Quantitative scoring</strong> for CX quality and time/effort cost.</span></div>
+                <div class="list-item"><i class="fa-solid fa-lightbulb"></i> <span><strong>Intervention opportunities</strong> identified per step and per path.</span></div>
+                <div class="list-item"><i class="fa-solid fa-download"></i> <span><strong>Structured outputs</strong> ready for export and review.</span></div>
+            </div>
+
+            <div class="highlight-box">
+                "Most journey work fails not because teams choose the wrong solution, but because they never explored the full option space."
+            </div>
+
+            <h2>Why this matters</h2>
+            <p>This generator is designed to delay false certainty by making alternative futures explicit, comparable, and discussable. It helps teams avoid common failure modes like locking onto a single path too early or treating edge cases as noise.</p>
+
+            <h2>Intended use</h2>
+            <div class="framework-grid">
+                <div class="framework-card">
+                    <ul style="margin:0; padding-left:15px; color: var(--text-muted); font-size: 0.9rem;">
+                        <li>Early-stage journey exploration</li>
+                        <li>Pre-implementation readiness assessment</li>
+                        <li>Scenario planning and risk evaluation</li>
+                    </ul>
+                </div>
+                <div class="framework-card">
+                    <ul style="margin:0; padding-left:15px; color: var(--text-muted); font-size: 0.9rem;">
+                        <li>Stakeholder alignment under constraints</li>
+                        <li>Design and product decision audits</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="cta-group">
+                <a href="UX journey.html" class="btn btn-primary">
+                    Launch Generator <i class="fa-solid fa-play"></i>
+                </a>
+                <a href="https://github.com/your-repo-link" class="btn btn-secondary" target="_blank">
+                    Explore Repository <i class="fa-solid fa-code"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <h2>Bring Your Own Key (BYOK)</h2>
+            <p>This application operates on a <strong>BYOK</strong> model. Your data and keys are stored locally in your browser and are never sent to our servers. You will need your own API keys to power the intelligence and visual generation.</p>
+            
+            <div class="framework-grid">
+                <div class="framework-card">
+                    <h3><i class="fa-solid fa-brain"></i> Text Models</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);">Feel free to use any of the API keys below; exploring different LLM outputs is encouraged for diverse insights.</p>
+                    <ul style="margin:10px 0 0 0; padding-left:15px; color: var(--text-muted); font-size: 0.85rem;">
+                        <li><strong>OpenAI:</strong> Get keys at <a href="https://platform.openai.com/" target="_blank" style="color:var(--accent)">platform.openai.com</a></li>
+                        <li style="margin-top:8px;"><strong>DeepSeek:</strong> Get keys at <a href="https://platform.deepseek.com/" target="_blank" style="color:var(--accent)">platform.deepseek.com</a></li>
+                        <li style="margin-top:8px;"><strong>Anthropic:</strong> Get keys at <a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent)">console.anthropic.com</a></li>
+                    </ul>
+                </div>
+                <div class="framework-card">
+                    <h3><i class="fa-solid fa-image"></i> Image Models</h3>
+                    <p style="font-size: 0.8rem; margin-bottom: 10px; color: var(--text-muted);">Optional. The generator functions perfectly for text-based analysis without an image key.</p>
+                    <ul style="margin:10px 0 0 0; padding-left:15px; color: var(--text-muted); font-size: 0.85rem;">
+                        <li><strong>Gemini / Imagen:</strong> Get keys at <a href="https://aistudio.google.com/" target="_blank" style="color:var(--accent)">aistudio.google.com</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <div class="version">v1.1.0-beta • User Journey Generator • <i class="fa-brands fa-creative-commons"></i> BY-NC-SA 4.0 • Credit to <a href="https://refruit.com" target="_blank" style="color: inherit; text-decoration: underline;"><strong>Refruit</strong></a></div>
+        </footer>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const carousel = document.getElementById('carousel');
+        const items = document.querySelectorAll('.carousel-item');
+        const nav = document.getElementById('carousel-nav');
+
+        // Create dots
+        items.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.className = `nav-dot ${i === 0 ? 'active' : ''}`;
+            dot.onclick = () => goToSlide(i);
+            nav.appendChild(dot);
+        });
+
+        function updateCarousel() {
+            carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+            document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlide);
+            });
+        }
+
+        function moveCarousel(direction) {
+            currentSlide = (currentSlide + direction + items.length) % items.length;
+            updateCarousel();
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateCarousel();
+        }
+
+        // Auto play
+        setInterval(() => moveCarousel(1), 5000);
+    </script>
+</body>
+</html>
