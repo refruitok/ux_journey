@@ -2,6 +2,17 @@
 
 An AI-driven system for early assumption testing, rapid synthesis, and controlled exploration of alternative user journeys.
 
+## Experience Preview
+
+![Journey Mapping](img/one.png)
+*Journey Mapping: Visualized steps with integrated Micro-Moments and JTBD data.*
+
+![Branching Scenarios](img/two.png)
+*Branching Scenarios: Explore alternative paths and "What If" disruptions.*
+
+![AI Visuals](img/three.png)
+*AI Visuals: Photorealistic scene generation powered by Imagen 3.0.*
+
 ## Overview
 
 The **User Journey Generator** is a decision-support environment for UX, product, and service teams to model, branch, and evaluate multiple plausible user journeys under uncertainty—before commitment, build, or rollout.
